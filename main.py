@@ -2,9 +2,6 @@
 NBA Analytics Platform: Game Predictions and Fantasy Insights
 CS 210 Project - FINAL VERSION
 Andy Zhu, AZ455
-
-You'll need the 'all_seasons.csv' dataset in the same folder.
-You can grab it from Kaggle: NBA Player Stats (1950-2022).
 """
 
 import numpy as np
