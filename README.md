@@ -1,130 +1,181 @@
-# NBA Analytics & Game Prediction Platform
+# NBA Player Development Predictor
 
-A data analytics and machine learning project that combines SQL, exploratory analysis, and predictive modeling to study NBA player performance.
+A small NBA analytics project that studies how player performance changes from one season to the next and tests whether historical statistics can help predict future performance.
 
-I built this project for Rutgers' CS210 course, but treated it as more than just a database assignment. The goal was to build a complete workflow starting with relational data, moving through SQL analysis and visualization, and ending with a machine learning model that could make predictions about future player performance.
+I built this project to practice a complete data workflow: cleaning season-level data, storing it in SQLite, answering questions with SQL, exploring trends with visualizations, creating time-aware features, training models, and presenting the results in a simple Streamlit dashboard.
 
-## Project Overview
+## What it looks at
 
-The project has three main parts:
+- How scoring changes as players age
+- Rookie to sophomore development
+- Year-to-year scoring consistency
+- Draft tier and player production
+- Player availability and games played
+- Whether previous-season statistics help predict next-season PPG
+- Which players have a higher probability of improving by at least 15%
+- How the models compare with a simple previous-season baseline
 
-1. Relational database and SQL analysis
-2. Exploratory data analysis
-3. Machine learning
+## Models
 
-The dataset contains 2,000+ season-level player records with statistics such as points, rebounds, assists, shooting efficiency, games played, draft information, and player demographics.
+### Next-season PPG
 
-## Database
+A Random Forest regressor estimates a player's next-season points per game using previous-season statistics and earlier career information.
 
-The data is stored in SQLite using three normalized tables:
+The project reports:
+
+- MAE
+- R²
+- Previous-season PPG baseline
+
+### Improvement classification
+
+A Random Forest classifier estimates whether a player will improve their PPG by at least 15% in the following season.
+
+The project reports:
+
+- Accuracy
+- Precision
+- Recall
+- F1 score
+- ROC-AUC
+- Confusion matrix
+
+The models are meant to be an analysis exercise, not a professional scouting or betting system.
+
+## Train, validation, and test setup
+
+The project uses a temporal split rather than randomly splitting player-season rows.
+
+Older target seasons are used for training, the next two seasons are used for validation, and the final two seasons are used for testing. This keeps future seasons out of the training data and better matches the question the project is asking.
+
+Missing numeric values are filled using medians calculated from the training set only.
+
+## SQL database
+
+The SQLite database contains:
 
 ```text
 players
-   |
-   +---- player_stats
-   |
-teams
+    |
+    +---- player_stats ---- teams
 ```
 
-The schema separates player information, team information, and season-level statistics.
+The SQL examples use joins, grouping, filtering, and a `LAG()` window function to compare player seasons.
 
-The database also includes indexes for common queries, including player-by-season lookups.
+## Visual analysis
 
-SQL analysis uses:
+The analysis produces charts for:
 
-* JOINs
-* GROUP BY
-* HAVING
-* CTEs
-* Window functions
-* `LAG()`
-* Subqueries
+1. Average scoring by age
+2. Rookie to sophomore scoring changes
+3. Year-to-year scoring consistency
+4. Average scoring by draft tier
+5. PPG improvement versus previous-season scoring
+6. Typical games played for multi-season players
 
-One example uses `LAG()` to compare a player's scoring between consecutive seasons and identify year-over-year changes.
+The Streamlit dashboard also lets you select an individual player and view their history, development, prediction, and related league analysis.
 
-## Exploratory Analysis
+## Project structure
 
-The project includes visualizations examining questions such as:
+```text
+NBA_Player_Development_Predictor/
+├── app.py
+├── app/
+│   └── dashboard.py
+├── data/
+│   └── all_seasons.csv       # add the dataset here
+├── outputs/                  # generated results
+├── src/
+│   ├── analysis.py
+│   ├── data.py
+│   ├── database.py
+│   ├── modeling.py
+│   ├── run_analysis.py
+│   └── visuals.py
+├── tests/
+│   └── test_project.py
+├── requirements.txt
+└── run.py
+```
 
-* How does scoring change throughout a player's career?
-* How common is the sophomore jump?
-* How does scoring vary by age and position?
-* Does draft position relate to long-term scoring?
-* How consistent is scoring from one season to the next?
-* How consistent is player availability?
+`app.py` is the main Streamlit entry point. The `app/dashboard.py` file is kept as a small alternate module for compatibility with the earlier project layout.
 
-These visualizations were used to explore the data before building the predictive models.
+## Setup
 
-## Machine Learning
+Use Python 3.10 or newer.
 
-The ML portion uses a temporal train, validation, and test split.
+Create a virtual environment:
 
-This was important because randomly splitting NBA seasons would allow information from future seasons to enter the training data.
+```bash
+python -m venv .venv
+```
 
-The model was trained on earlier seasons, validated on 2019-2020, and tested on 2021-2022.
+Windows:
 
-### Classification
+```bash
+.venv\Scripts\activate
+```
 
-A Random Forest classifier predicts whether a player will become a high scorer in the following season.
+macOS/Linux:
 
-The target is defined as the top 15th percentile of scoring.
+```bash
+source .venv/bin/activate
+```
 
-Features include:
+Install dependencies:
 
-* Previous-season statistics
-* Career averages
-* Age
-* Seasons in the league
-* Years since draft
-* Draft tier
-* Height category
-* Efficiency metrics
+```bash
+pip install -r requirements.txt
+```
 
-The classifier achieved 73% test accuracy.
+## Run the analysis
 
-### Regression
+Put the NBA season dataset in:
 
-A Random Forest regressor predicts next-season fantasy points using a custom scoring formula based on:
+```text
+data/all_seasons.csv
+```
 
-* Points per game
-* Rebounds per game
-* Assists per game
+Then run:
 
-The model was compared against a simple previous-season baseline to determine whether the machine learning model actually provided useful predictive improvement.
+```bash
+python run.py
+```
 
-## Why Temporal Splitting?
+This creates the SQLite database, analysis tables, model files, metrics, predictions, and charts under `outputs/`.
 
-For this type of problem, randomly shuffling the data would make the evaluation look better than it should.
+## Run the dashboard
 
-If the model trains on 2022 data and then predicts a 2019 season, it is effectively using information from the future.
+From the project root:
 
-Using a temporal split produces a more realistic estimate of how the model would perform if it were actually making predictions before the next season.
+```bash
+streamlit run app.py
+```
 
-The lower accuracy that results is useful because it gives a more honest picture of model performance.
+If `data/all_seasons.csv` is not present, the dashboard uses a small clearly labeled demo dataset so the interface can still be tested. The demo data is not intended to represent real NBA results.
 
-## Tech Stack
+## Run the tests
 
-* Python
-* SQLite
-* pandas
-* scikit-learn
-* Matplotlib
-* seaborn
+```bash
+pytest
+```
 
-## Key Results
+## Data
 
-* 2,000+ player-season records
-* 20+ engineered features
-* 6 exploratory visualizations
-* 2 Random Forest models
-* 73% classification accuracy
-* Temporal train/validation/test split
-* Complex SQL analysis using CTEs and window functions
+The project was designed around publicly available NBA player season data. The expected CSV contains season-level player statistics including points, rebounds, assists, games played, efficiency metrics, draft information, and basic player information.
 
-## What I Learned
+The dataset itself is not included in the repository. Add your own copy as `data/all_seasons.csv`.
 
-The biggest takeaway was that building the model was only one part of the problem.
+## Limitations
 
-Data organization and evaluation methodology had just as much impact on the final result. In particular, using temporal validation made the model's performance much more realistic than a standard random train/test split.
+- Player names are used as the main historical identifier, so traded players and name changes are not handled perfectly.
+- The project uses season-level statistics rather than play-by-play information.
+- A 15% improvement is a project-defined target, not an official NBA definition of a breakout.
+- Random Forest models can identify relationships in historical data but do not establish causal reasons for player development.
+- The model does not directly account for injuries, coaching changes, roster changes, or future playing-time decisions.
 
-The project also gave me a good excuse to combine three things I enjoy working with: SQL, data analysis, and machine learning.
+## What I learned
+
+The main lesson from this project was that the modeling step is only one part of the workflow. The way the data is cleaned, organized, queried, and split has a large effect on the quality of the results.
+
+It also gave me practice moving between SQL, Python analysis, machine learning, and visualization in one project instead of treating them as separate exercises.
